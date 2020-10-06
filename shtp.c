@@ -137,24 +137,23 @@ typedef struct shtp_s {
     // Channels and their listeners
     shtp_Channel_t      chan[SH2_MAX_CHANS];
     shtp_ChanListener_t chanListener[SH2_MAX_CHANS];
-    uint8_t             nextChanListener;
+    uint8_t nextChanListener;
 
 } shtp_t;
 
 // ------------------------------------------------------------------------
 // Forward definitions
 
-static void shtp_onRx(void* cookie, uint8_t* pdata, uint32_t len, uint32_t t_us);
+static void shtp_onRx(void *cookie, uint8_t *pdata, uint32_t len, uint32_t t_us);
 static void addApp(uint32_t guid, const char *appName);
-static void addChannel(uint8_t chanNo, uint32_t guid, const char * chanName, bool wake);
-static void shtpAdvertHdlr(void *shtp, uint8_t tag, uint8_t len, uint8_t *val);
-static void shtpCmdListener(void *shtp, uint8_t *payload, uint16_t len, uint32_t timestamp);
-static void addAdvertListener(const char *appName,
-                              shtp_AdvertCallback_t *callback, void * cookie);
-static int addChanListener(const char * appName, const char * chanName,
-                           shtp_Callback_t *callback, void *cookie);
-static int toChanNo(const char * appName, const char *chanName);
-static int txProcess(uint8_t chan, uint8_t* pData, uint32_t len);
+static void addChannel(uint8_t chanNo, uint32_t guid, const char *chanName, bool wake);
+static void shtpAdvertHdlr(void *shtp, uint8_t tag, uint8_t len, const uint8_t *val);
+static void shtpCmdListener(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp);
+static void addAdvertListener(const char *appName, shtp_AdvertCallback_t *callback, void *cookie);
+static int
+addChanListener(const char *appName, const char *chanName, shtp_Callback_t *callback, void *cookie);
+static int toChanNo(const char *appName, const char *chanName);
+static int txProcess(uint8_t chan, uint8_t *pData, uint32_t len);
 
 // ------------------------------------------------------------------------
 // Private, static data
@@ -510,16 +509,17 @@ static void addChannel(uint8_t chanNo, uint32_t guid, const char * chanName, boo
     updateCallbacks();
 }
 
-
 // Callback for SHTP app-specific advertisement tags
-static void shtpAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, uint8_t *val)
+static void shtpAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, const uint8_t *val)
 {
     uint16_t x;
 
-    switch (tag) {
+    switch (tag)
+    {
         case TAG_MAX_CARGO_PLUS_HEADER_WRITE:
             x = readu16(val) - SHTP_HDR_LEN;
-            if (x < SHTP_MAX_PAYLOAD_OUT) {
+            if (x < SHTP_MAX_PAYLOAD_OUT)
+            {
                 shtp.outMaxPayload = x;
             }
             break;
@@ -551,8 +551,7 @@ static void shtpAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, uint8_t *val)
     }
 }
 
-static void callAdvertHandler(uint32_t guid,
-                              uint8_t tag, uint8_t len, uint8_t *val)
+static void callAdvertHandler(uint32_t guid, uint8_t tag, uint8_t len, const uint8_t *val)
 {
     // Find app name for this GUID
     const char * appName = 0;
@@ -580,11 +579,11 @@ static void callAdvertHandler(uint32_t guid,
     }
 }
 
-static void processAdvertisement(uint8_t *payload, uint16_t payloadLen)
+static void processAdvertisement(const uint8_t *payload, uint16_t payloadLen)
 {
     uint8_t tag;
     uint8_t len;
-    uint8_t *val;
+    const uint8_t *val;
     uint16_t cursor = 1;
     uint32_t guid = 0;
     char appName[SHTP_APP_NAME_LEN];
@@ -661,13 +660,15 @@ static void processAdvertisement(uint8_t *payload, uint16_t payloadLen)
 }
 
 // Callback for SHTP command channel
-static void shtpCmdListener(void *cookie, uint8_t *payload, uint16_t len, uint32_t timestamp)
+static void shtpCmdListener(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp)
 {
-    if ((payload == 0) || (len == 0)) return;
-    
+    if ((payload == 0) || (len == 0))
+        return;
+
     uint8_t response = payload[0];
 
-    switch (response) {
+    switch (response)
+    {
         case RESP_ADVERTISE:
             processAdvertisement(payload, len);
             break;
