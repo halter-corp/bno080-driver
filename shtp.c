@@ -30,6 +30,8 @@
 
 #define SH2_MAX_CHANS (8)
 #define SH2_MAX_APPS (5)
+#define SH2_MAX_CHANNEL_LISTENERS 6
+#define SH2_MAX_APP_LISTENERS     3
 #define SHTP_APP_NAME_LEN (32)
 #define SHTP_CHAN_NAME_LEN (32)
 
@@ -132,12 +134,12 @@ typedef struct shtp_s {
     shtp_App_t app[SH2_MAX_APPS];
     uint8_t    nextApp;
     
-    shtp_AppListener_t appListener[SH2_MAX_APPS];
+    shtp_AppListener_t appListener[SH2_MAX_APP_LISTENERS];
     uint8_t            nextAppListener;
 
     // Channels and their listeners
     shtp_Channel_t      chan[SH2_MAX_CHANS];
-    shtp_ChanListener_t chanListener[SH2_MAX_CHANS];
+    shtp_ChanListener_t chanListener[SH2_MAX_CHANNEL_LISTENERS];
     uint8_t nextChanListener;
 
 } shtp_t;
@@ -196,7 +198,7 @@ int shtp_init(void)
     shtp.advertPhase = ADVERT_NEEDED;
 
     // Init App Listeners
-    for (unsigned int n = 0; n < SH2_MAX_APPS; n++)
+    for (unsigned int n = 0; n < SH2_MAX_APP_LISTENERS; n++)
     {
 #ifdef CONFIG_SHTP_CONST_NAMES
         shtp.appListener[n].appName = "";
@@ -220,7 +222,7 @@ int shtp_init(void)
     }
 
     // Init registered channel listeners array
-    for (unsigned int n = 0; n < SH2_MAX_CHANS; n++)
+    for (unsigned int n = 0; n < SH2_MAX_CHANNEL_LISTENERS; n++)
     {
 #ifdef CONFIG_SHTP_CONST_NAMES
         shtp.chanListener[n].appName = "";
@@ -450,7 +452,7 @@ static void updateCallbacks(void)
         }
         else {
             // Look for a listener registered with this app name, channel name
-            for (int listenerNo = 0; listenerNo < SH2_MAX_CHANS; listenerNo++) {
+            for (int listenerNo = 0; listenerNo < SH2_MAX_CHANNEL_LISTENERS; listenerNo++) {
                 if ((shtp.chanListener[listenerNo].callback != 0) &&
                     (strcmp(appName, shtp.chanListener[listenerNo].appName) == 0) &&
                     (strcmp(chanName, shtp.chanListener[listenerNo].chanName) == 0)) {
@@ -568,7 +570,7 @@ static void callAdvertHandler(uint32_t guid, uint8_t tag, uint8_t len, const uin
     }
     
     // Find listener for this app
-    for (int n = 0; n < SH2_MAX_APPS; n++)
+    for (int n = 0; n < SH2_MAX_APP_LISTENERS; n++)
     {
         if (strcmp(shtp.appListener[n].appName, appName) == 0) {
             // Found matching App entry
@@ -686,7 +688,7 @@ static void addAdvertListener(const char *appName,
     shtp_AppListener_t *pAppListener = 0;
 
     // Bail out if no space for more apps
-    if (shtp.nextAppListener >= SH2_MAX_APPS)
+    if (shtp.nextAppListener >= SH2_MAX_APP_LISTENERS)
         return;
 
     // Register this app
@@ -708,7 +710,7 @@ static int addChanListener(const char * appName, const char * chanName,
     shtp_ChanListener_t *pListener = 0;
 
     // Bail out if there are too many listeners registered
-    if (shtp.nextChanListener >= SH2_MAX_CHANS)
+    if (shtp.nextChanListener >= SH2_MAX_CHANNEL_LISTENERS)
         return SH2_ERR;
 
     // Register channel listener
