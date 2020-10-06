@@ -153,7 +153,7 @@ static void addAdvertListener(const char *appName, shtp_AdvertCallback_t *callba
 static int
 addChanListener(const char *appName, const char *chanName, shtp_Callback_t *callback, void *cookie);
 static int toChanNo(const char *appName, const char *chanName);
-static int txProcess(uint8_t chan, uint8_t *pData, uint32_t len);
+static int txProcess(uint8_t chan, const uint8_t *pData, uint32_t len);
 
 // ------------------------------------------------------------------------
 // Private, static data
@@ -766,7 +766,7 @@ static inline uint16_t min(uint16_t a, uint16_t b)
 }
 
 // Send a cargo as a sequence of transports
-static int txProcess(uint8_t chan, uint8_t* pData, uint32_t len)
+static int txProcess(uint8_t chan, const uint8_t *pData, uint32_t len)
 {
     int status = SH2_OK;
     
