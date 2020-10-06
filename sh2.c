@@ -483,7 +483,7 @@ const sh2_Op_t setSensorConfigOp = {
 // get FRS Operation
 static int getFrsStart(void);
 static void getFrsRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t getFrsOp = {
+static const sh2_Op_t getFrsOp = {
     .start = getFrsStart,
     .rx = getFrsRx,
 };
@@ -491,7 +491,7 @@ const sh2_Op_t getFrsOp = {
 // set FRS Operation
 static int setFrsStart(void);
 static void setFrsRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t setFrsOp = {
+static const sh2_Op_t setFrsOp = {
     .start = setFrsStart,
     .rx = setFrsRx,
 };
@@ -499,7 +499,7 @@ const sh2_Op_t setFrsOp = {
 // get errors operation
 static int getErrorsStart(void);
 static void getErrorsRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t getErrorsOp = {
+static const sh2_Op_t getErrorsOp = {
     .start = getErrorsStart,
     .rx = getErrorsRx,
 };
@@ -507,7 +507,7 @@ const sh2_Op_t getErrorsOp = {
 // get counts operation
 static int getCountsStart(void);
 static void getCountsRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t getCountsOp = {
+static const sh2_Op_t getCountsOp = {
     .start = getCountsStart,
     .rx = getCountsRx,
 };
@@ -515,7 +515,7 @@ const sh2_Op_t getCountsOp = {
 // reinitialize operation
 static int reinitStart(void);
 static void reinitRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t reinitOp = {
+static const sh2_Op_t reinitOp = {
     .start = reinitStart,
     .rx = reinitRx,
 };
@@ -523,7 +523,7 @@ const sh2_Op_t reinitOp = {
 // save dcd now operation
 static int saveDcdNowStart(void);
 static void saveDcdNowRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t saveDcdNowOp = {
+static const sh2_Op_t saveDcdNowOp = {
     .start = saveDcdNowStart,
     .rx = saveDcdNowRx,
 };
@@ -531,7 +531,7 @@ const sh2_Op_t saveDcdNowOp = {
 // cal config operation
 static int calConfigStart(void);
 static void calConfigRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t calConfigOp = {
+static const sh2_Op_t calConfigOp = {
     .start = calConfigStart,
     .rx = calConfigRx,
 };
@@ -539,7 +539,7 @@ const sh2_Op_t calConfigOp = {
 // get cal config operation
 static int getCalConfigStart(void);
 static void getCalConfigRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t getCalConfigOp = {
+static const sh2_Op_t getCalConfigOp = {
     .start = getCalConfigStart,
     .rx = getCalConfigRx,
 };
@@ -547,7 +547,7 @@ const sh2_Op_t getCalConfigOp = {
 // force flush operation
 static int forceFlushStart(void);
 static void forceFlushRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t forceFlushOp = {
+static const sh2_Op_t forceFlushOp = {
     .start = forceFlushStart,
     .rx = forceFlushRx,
 };

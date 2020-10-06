@@ -102,6 +102,7 @@ typedef struct shtp_ChanListener_s
 #define ADVERT_REQUESTED (1)
 #define ADVERT_IDLE (2)
 
+#define INVALID_GUID 0xFFFFFFFF
 typedef struct shtp_s {
     char shtpVersion[8];
 
@@ -147,7 +148,7 @@ typedef struct shtp_s {
 static void shtp_onRx(void *cookie, uint8_t *pdata, uint32_t len, uint32_t t_us);
 static void addApp(uint32_t guid, const char *appName);
 static void addChannel(uint8_t chanNo, uint32_t guid, const char *chanName, bool wake);
-static void shtpAdvertHdlr(void *shtp, uint8_t tag, uint8_t len, const uint8_t *val);
+static void shtpAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, const uint8_t *val);
 static void shtpCmdListener(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp);
 static void addAdvertListener(const char *appName, shtp_AdvertCallback_t *callback, void *cookie);
 static int
@@ -188,7 +189,7 @@ int shtp_init(void)
 
     // Init SHTP Apps
     for (unsigned int n = 0; n < SH2_MAX_APPS; n++) {
-        shtp.app[n].guid = 0xFFFFFFFF;
+        shtp.app[n].guid = INVALID_GUID;
         strcpy(shtp.app[n].appName, "");
     }
     shtp.nextApp = 0;
@@ -211,7 +212,7 @@ int shtp_init(void)
     for (unsigned int n = 0; n < SH2_MAX_CHANS; n++) {
         shtp.chan[n].nextOutSeq = 0;
         shtp.chan[n].nextInSeq = 0;
-        shtp.chan[n].guid = 0xFFFFFFFF;
+        shtp.chan[n].guid = INVALID_GUID;
         strcpy(shtp.chan[n].chanName, "");
         shtp.chan[n].cookie = 0;
         shtp.chan[n].callback = 0;
@@ -281,8 +282,8 @@ int shtp_listenChan(const char *app, const char *chan,
                     shtp_Callback_t *callback, void *cookie)
 {
     // Balk if app or channel name isn't valid
-    if ((app == 0) || (strlen(app) == 0)) return SH2_ERR_BAD_PARAM;
-    if ((chan == 0) || (strlen(chan) == 0)) return SH2_ERR_BAD_PARAM;
+    if ((app == NULL) || (strlen(app) == 0)) return SH2_ERR_BAD_PARAM;
+    if ((chan == NULL) || (strlen(chan) == 0)) return SH2_ERR_BAD_PARAM;
 
     return addChanListener(app, chan, callback, cookie);
 }
@@ -427,7 +428,7 @@ static void updateCallbacks(void)
         // Reset callback for this channel until we find the right one.
         shtp.chan[chanNo].callback = 0;
             
-        if (shtp.chan[chanNo].guid == 0xFFFFFFFF) {
+        if (shtp.chan[chanNo].guid == INVALID_GUID) {
             // This channel entry not used.
             continue;
         }
@@ -444,7 +445,7 @@ static void updateCallbacks(void)
                 break;
             }
         }
-        if (appName == 0) {
+        if (appName == NULL) {
             // No App registered with this GUID so can't associate channel callback yet.
         }
         else {
@@ -554,14 +555,14 @@ static void shtpAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, const uint8_t
 static void callAdvertHandler(uint32_t guid, uint8_t tag, uint8_t len, const uint8_t *val)
 {
     // Find app name for this GUID
-    const char * appName = 0;
+    const char * appName = NULL;
     for (int n = 0; n < SH2_MAX_APPS; n++) {
         if (shtp.app[n].guid == guid) {
             appName = shtp.app[n].appName;
             break;
         }
     }
-    if (appName == 0) {
+    if (appName == NULL) {
         // Can't associate App name with this GUID
         return;
     }
@@ -662,7 +663,7 @@ static void processAdvertisement(const uint8_t *payload, uint16_t payloadLen)
 // Callback for SHTP command channel
 static void shtpCmdListener(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp)
 {
-    if ((payload == 0) || (len == 0))
+    if ((payload == NULL) || (len == 0))
         return;
 
     uint8_t response = payload[0];
@@ -732,7 +733,7 @@ static int addChanListener(const char * appName, const char * chanName,
 static int toChanNo(const char * appName, const char *chanName)
 {
     int chan = 0;
-    uint32_t guid = 0xFFFFFFFF;
+    uint32_t guid = INVALID_GUID;
 
     // Determine GUID for this appname
     for (int n = 0; n < SH2_MAX_APPS; n++) {
@@ -741,7 +742,7 @@ static int toChanNo(const char * appName, const char *chanName)
             break;
         }
     }
-    if (guid == 0xFFFFFFFF) return -1;
+    if (guid == INVALID_GUID) return -1;
 
     for (chan = 0; chan < SH2_MAX_CHANS; chan++) {
         if ((strcmp(shtp.chan[chan].chanName, chanName) == 0) &&
