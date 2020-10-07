@@ -338,65 +338,78 @@ typedef struct sh2_s {
 			sh2_SensorConfig_t *pConfig;
 			sh2_SensorId_t sensorId;
 		} getSensorConfig;
-		struct {
-			const sh2_SensorConfig_t *pConfig;
-			sh2_SensorId_t sensorId;
-		} setSensorConfig;
-		struct {
-			uint16_t frsType;
-			uint32_t *pData;
-			uint16_t *pWords;
-			uint16_t nextOffset;
-			sh2_SensorMetadata_t *pMetadata;
-		} getFrs;
-		struct {
-			uint16_t frsType;
-			uint32_t *pData;
-			uint16_t words;
-			uint16_t offset;
-		} setFrs;
-		struct {
-			uint8_t seq;
-			uint8_t severity;
-			sh2_ErrorRecord_t *pErrors;
-			uint16_t *pNumErrors;
-			uint16_t errsRead;
-		} getErrors;
-		struct {
-			uint8_t seq;
-			sh2_SensorId_t sensorId;
-			sh2_Counts_t *pCounts;
-		} getCounts;
-		struct {
-			uint8_t seq;
-		} reinit;
-		struct {
-			uint8_t seq;
-		} saveDcdNow;
-		struct {
-			uint8_t sensors;
-			uint8_t seq;
-		} calConfig;
-		struct {
-			uint8_t *pSensors;
-			uint8_t seq;
-		} getCalConfig;
-		struct {
-			sh2_SensorId_t sensorId;
-		} forceFlush;
-        struct {
-            uint8_t seq;
-            sh2_OscType_t *pOscType;
-        } getOscType;
-        struct {
-            uint32_t interval_us;
-            uint8_t seq;
-        } startCal;
-        struct {
-            sh2_CalStatus_t status;
-            uint8_t seq;
-        } finishCal;
-    } opData;
+                struct
+                {
+                    const sh2_SensorConfig_t *pConfig;
+                    sh2_SensorId_t sensorId;
+                } setSensorConfig;
+                struct
+                {
+                    uint16_t frsType;
+                    uint32_t *pData;
+                    uint16_t *pWords;
+                    uint16_t nextOffset;
+                    sh2_SensorMetadata_t *pMetadata;
+                } getFrs;
+                struct
+                {
+                    uint16_t frsType;
+                    uint32_t *pData;
+                    uint16_t words;
+                    uint16_t offset;
+                } setFrs;
+                struct
+                {
+                    uint8_t seq;
+                    uint8_t severity;
+                    sh2_ErrorRecord_t *pErrors;
+                    uint16_t *pNumErrors;
+                    uint16_t errsRead;
+                } getErrors;
+                struct
+                {
+                    uint8_t seq;
+                    sh2_SensorId_t sensorId;
+                    sh2_Counts_t *pCounts;
+                } getCounts;
+                struct
+                {
+                    uint8_t seq;
+                } reinit;
+                struct
+                {
+                    uint8_t seq;
+                } saveDcdNow;
+                struct
+                {
+                    uint8_t sensors;
+                    uint8_t seq;
+                } calConfig;
+                struct
+                {
+                    uint8_t *pSensors;
+                    uint8_t seq;
+                } getCalConfig;
+                struct
+                {
+                    sh2_SensorId_t sensorId;
+                } forceFlush;
+                struct
+                {
+                    uint8_t seq;
+                    sh2_OscType_t *pOscType;
+                } getOscType;
+                struct
+                {
+                    uint32_t interval_us;
+                    uint8_t seq;
+                } startCal;
+                struct
+                {
+                    sh2_CalStatus_t status;
+                    uint8_t seq;
+                } finishCal;
+        } opData;
 
 } sh2_t;
 
@@ -405,18 +418,23 @@ static int16_t toQ14(double x);
 static void setupCmdParams(uint8_t cmd, uint8_t p[9]);
 static void setupCmd0(uint8_t cmd);
 static void setupCmd1(uint8_t cmd, uint8_t p0);
-    
-static void executableAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, uint8_t *val);
-static void executableDeviceHdlr(void *cookie, uint8_t *payload, uint16_t len, uint32_t timestamp);
 
-static void sensorhubAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, uint8_t *val);
-static void sensorhubControlHdlr(void *cookie, uint8_t *payload, uint16_t len, uint32_t timestamp);
-static void sensorhubInputNormalHdlr(void *cookie, uint8_t *payload, uint16_t len, uint32_t timestamp);
-static void sensorhubInputWakeHdlr(void *cookie, uint8_t *payload, uint16_t len, uint32_t timestamp);
-static void sensorhubInputGyroRvHdlr(void *cookie, uint8_t *payload, uint16_t len, uint32_t timestamp);
+static void executableAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, const uint8_t *val);
+static void
+executableDeviceHdlr(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp);
+
+static void sensorhubAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, const uint8_t *val);
+static void
+sensorhubControlHdlr(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp);
+static void
+sensorhubInputNormalHdlr(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp);
+static void
+sensorhubInputWakeHdlr(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp);
+static void
+sensorhubInputGyroRvHdlr(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp);
 
 static uint8_t getReportLen(uint8_t reportId);
-    
+
 // SH-2 transaction phases
 static int opStart(const sh2_Op_t *pOp);
 static void opTxDone(void);
@@ -465,7 +483,7 @@ const sh2_Op_t setSensorConfigOp = {
 // get FRS Operation
 static int getFrsStart(void);
 static void getFrsRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t getFrsOp = {
+static const sh2_Op_t getFrsOp = {
     .start = getFrsStart,
     .rx = getFrsRx,
 };
@@ -473,7 +491,7 @@ const sh2_Op_t getFrsOp = {
 // set FRS Operation
 static int setFrsStart(void);
 static void setFrsRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t setFrsOp = {
+static const sh2_Op_t setFrsOp = {
     .start = setFrsStart,
     .rx = setFrsRx,
 };
@@ -481,7 +499,7 @@ const sh2_Op_t setFrsOp = {
 // get errors operation
 static int getErrorsStart(void);
 static void getErrorsRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t getErrorsOp = {
+static const sh2_Op_t getErrorsOp = {
     .start = getErrorsStart,
     .rx = getErrorsRx,
 };
@@ -489,7 +507,7 @@ const sh2_Op_t getErrorsOp = {
 // get counts operation
 static int getCountsStart(void);
 static void getCountsRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t getCountsOp = {
+static const sh2_Op_t getCountsOp = {
     .start = getCountsStart,
     .rx = getCountsRx,
 };
@@ -497,7 +515,7 @@ const sh2_Op_t getCountsOp = {
 // reinitialize operation
 static int reinitStart(void);
 static void reinitRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t reinitOp = {
+static const sh2_Op_t reinitOp = {
     .start = reinitStart,
     .rx = reinitRx,
 };
@@ -505,7 +523,7 @@ const sh2_Op_t reinitOp = {
 // save dcd now operation
 static int saveDcdNowStart(void);
 static void saveDcdNowRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t saveDcdNowOp = {
+static const sh2_Op_t saveDcdNowOp = {
     .start = saveDcdNowStart,
     .rx = saveDcdNowRx,
 };
@@ -513,7 +531,7 @@ const sh2_Op_t saveDcdNowOp = {
 // cal config operation
 static int calConfigStart(void);
 static void calConfigRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t calConfigOp = {
+static const sh2_Op_t calConfigOp = {
     .start = calConfigStart,
     .rx = calConfigRx,
 };
@@ -521,7 +539,7 @@ const sh2_Op_t calConfigOp = {
 // get cal config operation
 static int getCalConfigStart(void);
 static void getCalConfigRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t getCalConfigOp = {
+static const sh2_Op_t getCalConfigOp = {
     .start = getCalConfigStart,
     .rx = getCalConfigRx,
 };
@@ -529,7 +547,7 @@ const sh2_Op_t getCalConfigOp = {
 // force flush operation
 static int forceFlushStart(void);
 static void forceFlushRx(const uint8_t *payload, uint16_t len);
-const sh2_Op_t forceFlushOp = {
+static const sh2_Op_t forceFlushOp = {
     .start = forceFlushStart,
     .rx = forceFlushRx,
 };
@@ -919,29 +937,31 @@ static void setupCmd1(uint8_t cmd, uint8_t p0)
     setupCmdParams(cmd, p);
 }
 
-static void sensorhubAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, uint8_t *val)
+static void sensorhubAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, const uint8_t *val)
 {
-
-    switch (tag) {
+    switch (tag)
+    {
         case TAG_SH2_VERSION:
             strcpy(sh2.version, (const char *)val);
             break;
 
         case TAG_SH2_REPORT_LENGTHS:
         {
-            uint8_t reports = len/2;
-            if (reports > SH2_MAX_REPORT_IDS) {
+            uint8_t reports = len / 2;
+            if (reports > SH2_MAX_REPORT_IDS)
+            {
                 // Hub gave us more report lengths than we can store!
                 reports = SH2_MAX_REPORT_IDS;
             }
-        
-            for (int n = 0; n < reports; n++) {
-                sh2.report[n].id = val[n*2];
-                sh2.report[n].len = val[n*2 + 1];
+
+            for (int n = 0; n < reports; n++)
+            {
+                sh2.report[n].id = val[n * 2];
+                sh2.report[n].len = val[n * 2 + 1];
             }
             break;
         }
-    
+
         case 0:
         {
             // 0 tag indicates end of advertisements for this app
@@ -957,42 +977,51 @@ static void sensorhubAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, uint8_t 
     }
 }
 
-static void sensorhubControlHdlr(void *cookie, uint8_t *payload, uint16_t len, uint32_t timestamp)
+static void
+sensorhubControlHdlr(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp)
 {
     uint16_t cursor = 0;
     uint32_t count = 0;
-    CommandResp_t * pResp = 0;
+    CommandResp_t *pResp = 0;
     sh2_AsyncEvent_t event;
-    
-    if (len == 0) {
+
+    if (len == 0)
+    {
         sh2.emptyPayloads++;
         return;
     }
 
-    while (cursor < len) {
+    while (cursor < len)
+    {
         // Get next report id
         count++;
         uint8_t reportId = payload[cursor];
 
         // Determine report length
         uint8_t reportLen = 0;
-        for (int n = 0; n < SH2_MAX_REPORT_IDS; n++) {
-            if (sh2.report[n].id == reportId) {
+        for (int n = 0; n < SH2_MAX_REPORT_IDS; n++)
+        {
+            if (sh2.report[n].id == reportId)
+            {
                 reportLen = sh2.report[n].len;
                 break;
             }
         }
-        if (reportLen == 0) {
+        if (reportLen == 0)
+        {
             // An unrecognized report id
             sh2.unknownReportIds++;
             return;
         }
-        else {
+        else
+        {
             // Check for unsolicited initialize response or FRS change response
-            if (reportId == SENSORHUB_COMMAND_RESP) {
-                pResp = (CommandResp_t *)(payload+cursor);
+            if (reportId == SENSORHUB_COMMAND_RESP)
+            {
+                pResp = (CommandResp_t *)(payload + cursor);
                 if ((pResp->command == (SH2_CMD_INITIALIZE | SH2_INIT_UNSOLICITED)) &&
-                    (pResp->r[1] == SH2_INIT_SYSTEM)) {
+                    (pResp->r[1] == SH2_INIT_SYSTEM))
+                {
                     // This is an unsolicited INIT message.
                     // Is it time to call reset callback?
                     sh2.gotInitResp = true;
@@ -1002,7 +1031,8 @@ static void sensorhubControlHdlr(void *cookie, uint8_t *payload, uint16_t len, u
                     // This is an unsolicited FRS change message
                     event.eventId = SH2_FRS_CHANGE;
                     event.frsType = pResp->r[1] + (pResp->r[2] << 8);
-                    if (sh2.eventCallback) {
+                    if (sh2.eventCallback)
+                    {
                         sh2.eventCallback(sh2.eventCallbackCookie, &event);
                     }
 				}
@@ -1015,7 +1045,7 @@ static void sensorhubControlHdlr(void *cookie, uint8_t *payload, uint16_t len, u
     }
 }
 
-static void sensorhubInputHdlr(uint8_t *payload, uint16_t len, uint32_t timestamp)
+static void sensorhubInputHdlr(const uint8_t *payload, uint16_t len, uint32_t timestamp)
 {
     sh2_SensorEvent_t event;
     uint16_t cursor = 0;
@@ -1024,13 +1054,15 @@ static void sensorhubInputHdlr(uint8_t *payload, uint16_t len, uint32_t timestam
 
     referenceDelta = 0;
 
-    while (cursor < len) {
+    while (cursor < len)
+    {
         // Get next report id
         uint8_t reportId = payload[cursor];
 
         // Determine report length
         uint8_t reportLen = getReportLen(reportId);
-        if (reportLen == 0) {
+        if (reportLen == 0)
+        {
             // An unrecognized report id
             sh2.unknownReportIds++;
             return;
@@ -1052,7 +1084,7 @@ static void sensorhubInputHdlr(uint8_t *payload, uint16_t len, uint32_t timestam
                 opRx(payload+cursor, reportLen);
             }
             else {
-                uint8_t *pReport = payload+cursor;
+                const uint8_t *pReport = payload + cursor;
                 uint16_t delay = ((pReport[2] & 0xFC) << 6) + pReport[3];
                 event.timestamp_uS = touSTimestamp(timestamp, referenceDelta, delay);
                 event.reportId = reportId;
@@ -1068,19 +1100,22 @@ static void sensorhubInputHdlr(uint8_t *payload, uint16_t len, uint32_t timestam
     }
 }
 
-static void sensorhubInputNormalHdlr(void *cookie, uint8_t *payload, uint16_t len, uint32_t timestamp)
+static void
+sensorhubInputNormalHdlr(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp)
 {
-    
+
     sensorhubInputHdlr(payload, len, timestamp);
 }
 
-static void sensorhubInputWakeHdlr(void *cookie, uint8_t *payload, uint16_t len, uint32_t timestamp)
+static void
+sensorhubInputWakeHdlr(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp)
 {
-    
+
     sensorhubInputHdlr(payload, len, timestamp);
 }
 
-static void sensorhubInputGyroRvHdlr(void *cookie, uint8_t *payload, uint16_t len, uint32_t timestamp)
+static void
+sensorhubInputGyroRvHdlr(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp)
 {
 
     sh2_SensorEvent_t event;
@@ -1089,14 +1124,16 @@ static void sensorhubInputGyroRvHdlr(void *cookie, uint8_t *payload, uint16_t le
     uint8_t reportId = SH2_GYRO_INTEGRATED_RV;
     uint8_t reportLen = getReportLen(reportId);
 
-    while (cursor < len) {
+    while (cursor < len)
+    {
         event.timestamp_uS = timestamp;
         event.reportId = reportId;
-        memcpy(event.report, payload+cursor, reportLen);
+        memcpy(event.report, payload + cursor, reportLen);
         /// event.pReport = payload+cursor;
         event.len = reportLen;
 
-        if (sh2.sensorCallback != 0) {
+        if (sh2.sensorCallback != 0)
+        {
             sh2.sensorCallback(sh2.sensorCallbackCookie, &event);
         }
 
@@ -2050,9 +2087,10 @@ static void finishCalRx(const uint8_t *payload, uint16_t len)
     return;
 }
 
-static void executableAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, uint8_t *val)
+static void executableAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, const uint8_t *val)
 {
-    switch (tag) {
+    switch (tag)
+    {
         default:
             // Ignore unknown tags
             // (And there are no known tags for this app.)
@@ -2060,21 +2098,25 @@ static void executableAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, uint8_t
     }
 }
 
-static void executableDeviceHdlr(void *cookie, uint8_t *payload, uint16_t len, uint32_t timestamp)
+static void
+executableDeviceHdlr(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp)
 {
     sh2_AsyncEvent_t event;
 
     // Discard if length is bad
-    if (len != 1) {
+    if (len != 1)
+    {
         sh2.execBadPayload++;
         return;
     }
-    
-    switch (payload[0]) {
+
+    switch (payload[0])
+    {
         case EXECUTABLE_DEVICE_RESP_RESET_COMPLETE:
             // Notify client that reset is complete.
             event.eventId = SH2_RESET;
-            if (sh2.eventCallback) {
+            if (sh2.eventCallback)
+            {
                 sh2.eventCallback(sh2.eventCallbackCookie, &event);
             }
             break;

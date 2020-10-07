@@ -33,29 +33,28 @@ extern "C" {
 #define TAG_NULL 0
 #define TAG_GUID 1
 #define TAG_MAX_CARGO_PLUS_HEADER_WRITE 2
-#define TAG_MAX_CARGO_PLUS_HEADER_READ 3
-#define TAG_MAX_TRANSFER_WRITE 4
-#define TAG_MAX_TRANSFER_READ 5
-#define TAG_NORMAL_CHANNEL 6
-#define TAG_WAKE_CHANNEL 7
-#define TAG_APP_NAME 8
-#define TAG_CHANNEL_NAME 9
-#define TAG_ADV_COUNT 10
-#define TAG_APP_SPECIFIC 0x80
+#define TAG_MAX_CARGO_PLUS_HEADER_READ  3
+#define TAG_MAX_TRANSFER_WRITE          4
+#define TAG_MAX_TRANSFER_READ           5
+#define TAG_NORMAL_CHANNEL              6
+#define TAG_WAKE_CHANNEL                7
+#define TAG_APP_NAME                    8
+#define TAG_CHANNEL_NAME                9
+#define TAG_ADV_COUNT                   10
+#define TAG_APP_SPECIFIC                0x80
 
-typedef void shtp_Callback_t(void * cookie, uint8_t *payload, uint16_t len, uint32_t timestamp);
-typedef void shtp_AdvertCallback_t(void * cookie, uint8_t tag, uint8_t len, uint8_t *value);
+typedef void
+shtp_Callback_t(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp);
+typedef void shtp_AdvertCallback_t(void *cookie, uint8_t tag, uint8_t len, const uint8_t *value);
 typedef void shtp_SendCallback_t(void *cookie);
 
 int shtp_init(void);
 
 void shtp_start(bool dfu);
-    
-int shtp_listenChan(const char * app, const char * chan,
-                    shtp_Callback_t *callback, void * cookie);
 
-int shtp_listenAdvert(const char * appName,
-                      shtp_AdvertCallback_t *advertCallback, void * cookie);
+int shtp_listenChan(const char *app, const char *chan, shtp_Callback_t *callback, void *cookie);
+
+int shtp_listenAdvert(const char *appName, shtp_AdvertCallback_t *advertCallback, void * cookie);
 
 uint8_t shtp_chanNo(const char * appName, const char * chanName);
 

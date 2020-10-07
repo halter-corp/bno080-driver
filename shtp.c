@@ -18,6 +18,7 @@
 /*
  * Hillcrest Sensor Hub Transport Protocol (SHTP) implementation.
  */
+#define CONFIG_SHTP_CONST_NAMES
 
 #include <string.h>
 #include <stdio.h>
@@ -29,6 +30,8 @@
 
 #define SH2_MAX_CHANS (8)
 #define SH2_MAX_APPS (5)
+#define SH2_MAX_CHANNEL_LISTENERS 6
+#define SH2_MAX_APP_LISTENERS     3
 #define SHTP_APP_NAME_LEN (32)
 #define SHTP_CHAN_NAME_LEN (32)
 
@@ -63,8 +66,13 @@ typedef struct shtp_App_s {
     char appName[SHTP_APP_NAME_LEN];
 } shtp_App_t;
 
-typedef struct shtp_AppListener_s {
+typedef struct shtp_AppListener_s
+{
+#ifdef CONFIG_SHTP_CONST_NAMES
+    const char *appName;
+#else
     char appName[SHTP_APP_NAME_LEN];
+#endif
     shtp_AdvertCallback_t *callback;
     void *cookie;
 } shtp_AppListener_t;
@@ -79,9 +87,15 @@ typedef struct shtp_Channel_s {
     void *cookie;
 } shtp_Channel_t;
 
-typedef struct shtp_ChanListener_s {
+typedef struct shtp_ChanListener_s
+{
+#ifdef CONFIG_SHTP_CONST_NAMES
+    const char *appName;
+    const char *chanName;
+#else
     char appName[SHTP_APP_NAME_LEN];
     char chanName[SHTP_CHAN_NAME_LEN];
+#endif
     shtp_Callback_t *callback;
     void *cookie;
 } shtp_ChanListener_t;
@@ -90,6 +104,7 @@ typedef struct shtp_ChanListener_s {
 #define ADVERT_REQUESTED (1)
 #define ADVERT_IDLE (2)
 
+#define INVALID_GUID 0xFFFFFFFF
 typedef struct shtp_s {
     char shtpVersion[8];
 
@@ -119,30 +134,29 @@ typedef struct shtp_s {
     shtp_App_t app[SH2_MAX_APPS];
     uint8_t    nextApp;
     
-    shtp_AppListener_t appListener[SH2_MAX_APPS];
+    shtp_AppListener_t appListener[SH2_MAX_APP_LISTENERS];
     uint8_t            nextAppListener;
 
     // Channels and their listeners
     shtp_Channel_t      chan[SH2_MAX_CHANS];
-    shtp_ChanListener_t chanListener[SH2_MAX_CHANS];
-    uint8_t             nextChanListener;
+    shtp_ChanListener_t chanListener[SH2_MAX_CHANNEL_LISTENERS];
+    uint8_t nextChanListener;
 
 } shtp_t;
 
 // ------------------------------------------------------------------------
 // Forward definitions
 
-static void shtp_onRx(void* cookie, uint8_t* pdata, uint32_t len, uint32_t t_us);
+static void shtp_onRx(void *cookie, uint8_t *pdata, uint32_t len, uint32_t t_us);
 static void addApp(uint32_t guid, const char *appName);
-static void addChannel(uint8_t chanNo, uint32_t guid, const char * chanName, bool wake);
-static void shtpAdvertHdlr(void *shtp, uint8_t tag, uint8_t len, uint8_t *val);
-static void shtpCmdListener(void *shtp, uint8_t *payload, uint16_t len, uint32_t timestamp);
-static void addAdvertListener(const char *appName,
-                              shtp_AdvertCallback_t *callback, void * cookie);
-static int addChanListener(const char * appName, const char * chanName,
-                           shtp_Callback_t *callback, void *cookie);
-static int toChanNo(const char * appName, const char *chanName);
-static int txProcess(uint8_t chan, uint8_t* pData, uint32_t len);
+static void addChannel(uint8_t chanNo, uint32_t guid, const char *chanName, bool wake);
+static void shtpAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, const uint8_t *val);
+static void shtpCmdListener(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp);
+static void addAdvertListener(const char *appName, shtp_AdvertCallback_t *callback, void *cookie);
+static int
+addChanListener(const char *appName, const char *chanName, shtp_Callback_t *callback, void *cookie);
+static int toChanNo(const char *appName, const char *chanName);
+static int txProcess(uint8_t chan, const uint8_t *pData, uint32_t len);
 
 // ------------------------------------------------------------------------
 // Private, static data
@@ -177,15 +191,20 @@ int shtp_init(void)
 
     // Init SHTP Apps
     for (unsigned int n = 0; n < SH2_MAX_APPS; n++) {
-        shtp.app[n].guid = 0xFFFFFFFF;
+        shtp.app[n].guid = INVALID_GUID;
         strcpy(shtp.app[n].appName, "");
     }
     shtp.nextApp = 0;
     shtp.advertPhase = ADVERT_NEEDED;
 
     // Init App Listeners
-    for (unsigned int n = 0; n < SH2_MAX_APPS; n++) {
+    for (unsigned int n = 0; n < SH2_MAX_APP_LISTENERS; n++)
+    {
+#ifdef CONFIG_SHTP_CONST_NAMES
+        shtp.appListener[n].appName = "";
+#else
         strcpy(shtp.appListener[n].appName, "");
+#endif
         shtp.appListener[n].callback = 0;
         shtp.appListener[n].cookie = 0;
     }
@@ -195,7 +214,7 @@ int shtp_init(void)
     for (unsigned int n = 0; n < SH2_MAX_CHANS; n++) {
         shtp.chan[n].nextOutSeq = 0;
         shtp.chan[n].nextInSeq = 0;
-        shtp.chan[n].guid = 0xFFFFFFFF;
+        shtp.chan[n].guid = INVALID_GUID;
         strcpy(shtp.chan[n].chanName, "");
         shtp.chan[n].cookie = 0;
         shtp.chan[n].callback = 0;
@@ -203,9 +222,15 @@ int shtp_init(void)
     }
 
     // Init registered channel listeners array
-    for (unsigned int n = 0; n < SH2_MAX_CHANS; n++) {
+    for (unsigned int n = 0; n < SH2_MAX_CHANNEL_LISTENERS; n++)
+    {
+#ifdef CONFIG_SHTP_CONST_NAMES
+        shtp.chanListener[n].appName = "";
+        shtp.chanListener[n].chanName = "";
+#else
         strcpy(shtp.chanListener[n].appName, "");
         strcpy(shtp.chanListener[n].chanName, "");
+#endif
         shtp.chanListener[n].cookie = 0;
         shtp.chanListener[n].callback = 0;
     }
@@ -259,8 +284,8 @@ int shtp_listenChan(const char *app, const char *chan,
                     shtp_Callback_t *callback, void *cookie)
 {
     // Balk if app or channel name isn't valid
-    if ((app == 0) || (strlen(app) == 0)) return SH2_ERR_BAD_PARAM;
-    if ((chan == 0) || (strlen(chan) == 0)) return SH2_ERR_BAD_PARAM;
+    if ((app == NULL) || (strlen(app) == 0)) return SH2_ERR_BAD_PARAM;
+    if ((chan == NULL) || (strlen(chan) == 0)) return SH2_ERR_BAD_PARAM;
 
     return addChanListener(app, chan, callback, cookie);
 }
@@ -405,7 +430,7 @@ static void updateCallbacks(void)
         // Reset callback for this channel until we find the right one.
         shtp.chan[chanNo].callback = 0;
             
-        if (shtp.chan[chanNo].guid == 0xFFFFFFFF) {
+        if (shtp.chan[chanNo].guid == INVALID_GUID) {
             // This channel entry not used.
             continue;
         }
@@ -422,12 +447,12 @@ static void updateCallbacks(void)
                 break;
             }
         }
-        if (appName == 0) {
+        if (appName == NULL) {
             // No App registered with this GUID so can't associate channel callback yet.
         }
         else {
             // Look for a listener registered with this app name, channel name
-            for (int listenerNo = 0; listenerNo < SH2_MAX_CHANS; listenerNo++) {
+            for (int listenerNo = 0; listenerNo < SH2_MAX_CHANNEL_LISTENERS; listenerNo++) {
                 if ((shtp.chanListener[listenerNo].callback != 0) &&
                     (strcmp(appName, shtp.chanListener[listenerNo].appName) == 0) &&
                     (strcmp(chanName, shtp.chanListener[listenerNo].chanName) == 0)) {
@@ -487,16 +512,17 @@ static void addChannel(uint8_t chanNo, uint32_t guid, const char * chanName, boo
     updateCallbacks();
 }
 
-
 // Callback for SHTP app-specific advertisement tags
-static void shtpAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, uint8_t *val)
+static void shtpAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, const uint8_t *val)
 {
     uint16_t x;
 
-    switch (tag) {
+    switch (tag)
+    {
         case TAG_MAX_CARGO_PLUS_HEADER_WRITE:
             x = readu16(val) - SHTP_HDR_LEN;
-            if (x < SHTP_MAX_PAYLOAD_OUT) {
+            if (x < SHTP_MAX_PAYLOAD_OUT)
+            {
                 shtp.outMaxPayload = x;
             }
             break;
@@ -528,24 +554,23 @@ static void shtpAdvertHdlr(void *cookie, uint8_t tag, uint8_t len, uint8_t *val)
     }
 }
 
-static void callAdvertHandler(uint32_t guid,
-                              uint8_t tag, uint8_t len, uint8_t *val)
+static void callAdvertHandler(uint32_t guid, uint8_t tag, uint8_t len, const uint8_t *val)
 {
     // Find app name for this GUID
-    const char * appName = 0;
+    const char * appName = NULL;
     for (int n = 0; n < SH2_MAX_APPS; n++) {
         if (shtp.app[n].guid == guid) {
             appName = shtp.app[n].appName;
             break;
         }
     }
-    if (appName == 0) {
+    if (appName == NULL) {
         // Can't associate App name with this GUID
         return;
     }
     
     // Find listener for this app
-    for (int n = 0; n < SH2_MAX_APPS; n++)
+    for (int n = 0; n < SH2_MAX_APP_LISTENERS; n++)
     {
         if (strcmp(shtp.appListener[n].appName, appName) == 0) {
             // Found matching App entry
@@ -557,11 +582,11 @@ static void callAdvertHandler(uint32_t guid,
     }
 }
 
-static void processAdvertisement(uint8_t *payload, uint16_t payloadLen)
+static void processAdvertisement(const uint8_t *payload, uint16_t payloadLen)
 {
     uint8_t tag;
     uint8_t len;
-    uint8_t *val;
+    const uint8_t *val;
     uint16_t cursor = 1;
     uint32_t guid = 0;
     char appName[SHTP_APP_NAME_LEN];
@@ -638,13 +663,15 @@ static void processAdvertisement(uint8_t *payload, uint16_t payloadLen)
 }
 
 // Callback for SHTP command channel
-static void shtpCmdListener(void *cookie, uint8_t *payload, uint16_t len, uint32_t timestamp)
+static void shtpCmdListener(void *cookie, const uint8_t *payload, uint16_t len, uint32_t timestamp)
 {
-    if ((payload == 0) || (len == 0)) return;
-    
+    if ((payload == NULL) || (len == 0))
+        return;
+
     uint8_t response = payload[0];
 
-    switch (response) {
+    switch (response)
+    {
         case RESP_ADVERTISE:
             processAdvertisement(payload, len);
             break;
@@ -661,12 +688,17 @@ static void addAdvertListener(const char *appName,
     shtp_AppListener_t *pAppListener = 0;
 
     // Bail out if no space for more apps
-    if (shtp.nextAppListener >= SH2_MAX_APPS) return;
+    if (shtp.nextAppListener >= SH2_MAX_APP_LISTENERS)
+        return;
 
     // Register this app
     pAppListener = &shtp.appListener[shtp.nextAppListener];
     shtp.nextAppListener++;
+#ifdef CONFIG_SHTP_CONST_NAMES
+    pAppListener->appName = appName;
+#else
     strcpy(pAppListener->appName, appName);
+#endif
     pAppListener->callback = callback;
     pAppListener->cookie = cookie;
 }
@@ -678,13 +710,19 @@ static int addChanListener(const char * appName, const char * chanName,
     shtp_ChanListener_t *pListener = 0;
 
     // Bail out if there are too many listeners registered
-    if (shtp.nextChanListener >= SH2_MAX_CHANS) return SH2_ERR;
+    if (shtp.nextChanListener >= SH2_MAX_CHANNEL_LISTENERS)
+        return SH2_ERR;
 
     // Register channel listener
     pListener = &shtp.chanListener[shtp.nextChanListener];
     shtp.nextChanListener++;
+#ifdef CONFIG_SHTP_CONST_NAMES
+    pListener->appName = appName;
+    pListener->chanName = chanName;
+#else
     strcpy(pListener->appName, appName);
     strcpy(pListener->chanName, chanName);
+#endif
     pListener->callback = callback;
     pListener->cookie = cookie;
 
@@ -697,7 +735,7 @@ static int addChanListener(const char * appName, const char * chanName,
 static int toChanNo(const char * appName, const char *chanName)
 {
     int chan = 0;
-    uint32_t guid = 0xFFFFFFFF;
+    uint32_t guid = INVALID_GUID;
 
     // Determine GUID for this appname
     for (int n = 0; n < SH2_MAX_APPS; n++) {
@@ -706,7 +744,7 @@ static int toChanNo(const char * appName, const char *chanName)
             break;
         }
     }
-    if (guid == 0xFFFFFFFF) return -1;
+    if (guid == INVALID_GUID) return -1;
 
     for (chan = 0; chan < SH2_MAX_CHANS; chan++) {
         if ((strcmp(shtp.chan[chan].chanName, chanName) == 0) &&
@@ -731,7 +769,7 @@ static inline uint16_t min(uint16_t a, uint16_t b)
 }
 
 // Send a cargo as a sequence of transports
-static int txProcess(uint8_t chan, uint8_t* pData, uint32_t len)
+static int txProcess(uint8_t chan, const uint8_t *pData, uint32_t len)
 {
     int status = SH2_OK;
     
@@ -761,7 +799,7 @@ static int txProcess(uint8_t chan, uint8_t* pData, uint32_t len)
         shtp.outTransfer[3] = shtp.chan[chan].nextOutSeq++;
 
         // Transmit
-        int status = sh2_hal_tx(shtp.outTransfer, len);
+        status = sh2_hal_tx(shtp.outTransfer, len);
         if (status != SH2_OK) {
             // Error, throw away this cargo
             shtp.txDiscards++;
